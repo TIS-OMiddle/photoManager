@@ -148,3 +148,7 @@ flag 参数与 Options 一一对应：`-src`、`-dst`（必填）、`-recursive`
 - EXIF 时间按本地时区处理，跨时区拍摄的照片不做过渡修正。
 - rename 策略的时间戳精度为秒，同秒多文件靠递增序号保证唯一。
 - dry-run 模式下 rename 冲突探测基于运行开始时的目录快照缓存，运行期间外部对目标目录的改动不可见。
+
+## 备忘
+https://todo.sr.ht/~eliasnaur/gio/710?__goaway_challenge=meta-refresh&__goaway_id=5c39a5d7abeff4a27806346690da6a68&__goaway_referer=https%3A%2F%2Ftodo.sr.ht%2F~eliasnaur%2Fgio%3Fsearch%3Deditor
+Windows在DPI缩放下（比如4K+150%）会导致Editor拖拽选区、滚动条拖拽异常，属于GIO内部bug，目前未修复
