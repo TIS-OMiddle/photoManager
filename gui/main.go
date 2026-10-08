@@ -33,12 +33,11 @@ type ui struct {
 	th  *material.Theme
 	exp *explorer.Explorer
 
-	srcEdit, dstEdit, tmplEdit, workersEdit widget.Editor
-	srcBtn, dstBtn, runBtn, copyBtn         widget.Clickable
-	recursiveChk                            widget.Bool
-	modeEnum                                widget.Enum
-	conflictEnum                            widget.Enum
-	tsEXIF, tsCreate, tsModify              widget.Bool
+	srcEdit, dstEdit, tmplEdit, workersEdit, tsEdit widget.Editor
+	srcBtn, dstBtn, runBtn, copyBtn                 widget.Clickable
+	recursiveChk                                    widget.Bool
+	modeEnum                                        widget.Enum
+	conflictEnum                                    widget.Enum
 
 	logList     widget.List
 	logLines    []string // 全量日志（仅 UI 线程写入）
@@ -95,9 +94,8 @@ func run(w *app.Window) error {
 	u.recursiveChk.Value = true
 	u.modeEnum.Value = string(organizer.ModeDryRun)
 	u.conflictEnum.Value = string(organizer.ConflictOverwrite)
-	u.tsEXIF.Value = true
-	u.tsCreate.Value = true
-	u.tsModify.Value = true
+	u.tsEdit.SingleLine = true
+	u.tsEdit.SetText("exif,modify-time,create-time")
 	u.logList.Axis = layout.Vertical
 	u.logList.ScrollToEnd = true // 在底部时自动跟随；用户上翻后不再强制吸底
 	u.logCh = make(chan string, 1024)
@@ -211,17 +209,14 @@ func (u *ui) buildOptions() (organizer.Options, error) {
 		workers = 4
 	}
 	var sources []organizer.TimeSource
-	if u.tsEXIF.Value {
-		sources = append(sources, organizer.TimeSourceEXIF)
-	}
-	if u.tsCreate.Value {
-		sources = append(sources, organizer.TimeSourceCreateTime)
-	}
-	if u.tsModify.Value {
-		sources = append(sources, organizer.TimeSourceModifyTime)
+	for _, s := range strings.Split(u.tsEdit.Text(), ",") {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			sources = append(sources, organizer.TimeSource(s))
+		}
 	}
 	if len(sources) == 0 {
-		return organizer.Options{}, fmt.Errorf("请至少选择一种时间来源")
+		return organizer.Options{}, fmt.Errorf("请输入时间来源（可选 exif/create-time/modify-time，逗号分隔）")
 	}
 	tmpl := strings.TrimSpace(u.tmplEdit.Text())
 	if tmpl == "" {
@@ -317,16 +312,9 @@ func (u *ui) Layout(gtx layout.Context) layout.Dimensions {
 			}),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
 
-			layout.Rigid(material.Label(u.th, u.th.TextSize, "时间来源（按顺序尝试，至少选一项）").Layout),
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				return layout.Flex{}.Layout(gtx,
-					layout.Rigid(material.CheckBox(u.th, &u.tsEXIF, "EXIF 拍摄时间").Layout),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
-					layout.Rigid(material.CheckBox(u.th, &u.tsCreate, "创建时间").Layout),
-					layout.Rigid(layout.Spacer{Width: unit.Dp(12)}.Layout),
-					layout.Rigid(material.CheckBox(u.th, &u.tsModify, "修改时间").Layout),
-				)
-			}),
+			layout.Rigid(material.Label(u.th, u.th.TextSize, "时间来源（按顺序尝试）").Layout),
+			layout.Rigid(layout.Spacer{Height: unit.Dp(4)}.Layout),
+			layout.Rigid(editorBox(u.th, &u.tsEdit, "exif,modify-time,create-time")),
 			layout.Rigid(layout.Spacer{Height: unit.Dp(8)}.Layout),
 
 			layout.Rigid(material.Label(u.th, u.th.TextSize, "同名文件处理策略").Layout),
